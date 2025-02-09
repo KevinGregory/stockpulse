@@ -11,9 +11,9 @@ app = FastAPI(title="StockPulse")
 # Initialize cache on startup
 @app.on_event("startup")
 async def startup():
-    redis = aioredis.from_url("redis://localhost", encoding="utf8", decode_responses=True)
+    redis = aioredis.from_url("redis://localhost")
     FastAPICache.init(RedisBackend(redis), prefix="stockpulse-cache")
-
+    
 async def fetch_stock_data(symbol: str) -> Dict[str, Any]:
     try:
         stock = yf.Ticker(symbol)
