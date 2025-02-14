@@ -7,24 +7,80 @@ import asyncio
 `poetry run uvicorn stockpulse.api.routes:app --reload in terminal 1
 `poetry run solara run stockpulse.frontend.app:Page in terminal 2"""
 
-
 @solara.component
 def StockCard(symbol: str, data: dict | None, on_remove=None):
-    """A component for displaying a single stock card"""
-    with solara.Card(f"{symbol} Stock"):
+    """A component for displaying a single stock card with enhanced visuals"""
+    card_style = "min-width: 250px; padding: 1rem;"
+    
+    def get_change_color(change: float) -> str:
+        return "color: #22c55e;" if change >= 0 else "color: #ef4444;"
+    
+    with solara.Card(f"{symbol} Stock", style=card_style):
         if data is None:
-            solara.Text("Loading...")
+            with solara.Column(align="center"):
+                solara.Text("Loading...")
+        
         elif "error" in data:
-            with solara.Column(gap="0.5rem"):
-                solara.Text("Error: Invalid Symbol", style="color: red")
-                solara.Button("Remove", on_click=lambda: on_remove(symbol))
+            with solara.Column(gap="0.5rem", align="center"):
+                solara.Text("Error: Invalid Symbol", style="color: #ef4444;")
+                solara.Button(
+                    "Remove", 
+                    on_click=lambda: on_remove(symbol),
+                    style="background-color: #fee2e2; color: #ef4444;"
+                )
+        
         else:
-            solara.Markdown(f"""
-                **Price:** ${data['price']}  
-                **Change:** {data['change']}%  
-                **Volume:** {data['volume']:,}
-            """)
-            
+            try:
+                with solara.Column(gap="1rem"):
+                    # Symbol and Price
+                    with solara.Row(gap="1rem"):  # Removed justify
+                        solara.Text(symbol, style="font-size: 1.5rem; font-weight: bold;")
+                        # Add a spacer
+                        solara.Text("", style="flex-grow: 1;")
+                        solara.Text(
+                            f"${data['price']:,.2f}", 
+                            style="font-size: 1.5rem; font-weight: bold;"
+                        )
+                    
+                    # Change percentage
+                    change_style = get_change_color(data['change'])
+                    with solara.Column(align="center"):  # Changed to Column
+                        solara.Text(
+                            f"{'↑' if data['change'] >= 0 else '↓'} {abs(data['change']):.2f}%",
+                            style=f"font-weight: bold; {change_style}"
+                        )
+                    
+                    # Volume with label
+                    with solara.Row(gap="1rem"):  # Removed justify
+                        solara.Text("Volume:", style="color: #6b7280;")
+                        solara.Text("", style="flex-grow: 1;")  # Spacer
+                        solara.Text(f"{data['volume']:,}")
+                    
+                    # Bottom buttons
+                    with solara.Row(gap="1rem"):  # Removed justify and align
+                        solara.Button(
+                            "Details",
+                            on_click=lambda: None,
+                            style="background-color: #e0f2fe; color: #0284c7;"
+                        )
+                        solara.Text("", style="flex-grow: 1;")  # Spacer
+                        solara.Button(
+                            "Remove",
+                            on_click=lambda: on_remove(symbol),
+                            style="background-color: #fee2e2; color: #ef4444;"
+                        )
+            except Exception as e:
+                with solara.Column(gap="0.5rem", align="center"):
+                    solara.Text(f"Error displaying {symbol}", style="color: #ef4444;")
+                    solara.Text(str(e), style="font-size: 0.8rem; color: #6b7280;")
+                    solara.Button(
+                        "Remove", 
+                        on_click=lambda: on_remove(symbol),
+                        style="background-color: #fee2e2; color: #ef4444;"
+                    )
+                    
+                    
+                    
 @solara.component
 def StockDisplay():
     symbols, set_symbols = solara.use_state(["AAPL"])
